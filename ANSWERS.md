@@ -1,30 +1,17 @@
-# Part 2: Code Review and Bug Analysis
+Part 2: Bug Analysis
+Here are the main bugs found in the provided /apply route code:
+1. Null Check Missing: If coupon is not found in DB, `Coupon.findOne()` returns null and accessing `coupon.expiresAt` crashes the server. Added `if (!coupon)` check.
 
-Here are the issues found in the provided Express route `/apply`:
+2. Amount Validation Missing: Invalid or missing amount returns NaN, negative numbers give wrong math, and `1e400` turns into Infinity. Added `Number.isFinite(amount)` check.
 
-## 1. No check if coupon exists (Null Error / App Crash)
-- **Problem:** If the user enters a coupon code that does not exist in the database, `Coupon.findOne()` will return `null`. On the very next line, accessing `coupon.expiresAt` will throw a `TypeError: Cannot read properties of null` and crash the server.
-- **Fix:** Add a check to verify `if (!coupon)` before accessing any property.
+3. Code Type Check Missing: Object payload in `code` can cause NoSQL injection or `.trim()` crash. Added `typeof code === "string"` check.
 
-## 2. No validation on `amount`
-- **Problem:** `req.body.amount` is directly used in calculations without checking its type or value.
-  - If `amount` is missing or not a number (e.g. string), the math output will be `NaN`.
-  - If `amount` is negative, it will calculate an incorrect discount.
-- **Fix:** Validate that `amount` is present, is a number, and is greater than 0.
+4. Async Error Handling Missing: DB errors without try-catch can hang the request. Wrapped code in try-catch block.
 
-## 3. Missing `try-catch` for Async DB Call
-- **Problem:** Database calls can fail due to connection issues. Since there is no `try-catch` block or error handler, any database error will result in an unhandled promise rejection and keep the request hanging.
-- **Fix:** Wrap the logic in a `try-catch` block and return a 500 status code on failure.
+5. Expiry & Decimal Fix: Added check for expired coupons and rounded final amount using `Math.round()`.
 
-## 4. Missing check for `code` in request body
-- **Problem:** If `req.body.code` is not sent by client, `Coupon.findOne({ code: undefined })` still executes an unnecessary query to MongoDB.
-- **Fix:** Check if `req.body.code` exists before querying DB.
-
----
-
-## Fixed Code:
-
-```js
+# Here is the fixed code 
+ ``` js 
 app.post("/apply", async (req, res) => {
   try {
     const { code, amount } = req.body;

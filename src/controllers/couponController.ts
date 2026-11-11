@@ -53,23 +53,19 @@ export const applyCoupon = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(400, "Amount cannot be negative");
   }
 
-  // Validation: Code check
   if (!code || typeof code !== "string" || code.trim() === "") {
     throw new ApiError(400, "Coupon code is required");
   }
 
-  // Fetch coupon from DB
   const coupon = await Coupon.findOne({ code: code.trim().toUpperCase() });
   if (!coupon) {
     throw new ApiError(404, "Coupon code does not exist");
   }
 
-  // Validation: Expiry check
   if (new Date(coupon.expiresAt) < new Date()) {
     throw new ApiError(400, "Coupon has expired");
   }
 
-  // Calculate discount
   const finalAmount = amount - (amount * coupon.discountPercent) / 100;
   const roundedFinalAmount = Math.round(finalAmount * 100) / 100;
 

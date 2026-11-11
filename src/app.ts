@@ -6,8 +6,7 @@ const app = express();
 
 app.use(express.json());
 
-// Main API Route
-app.use("/api", couponRoutes);
+app.use("/", couponRoutes);
 
 // Global Error Handler Middleware
 app.use(errorHandler);
